@@ -4,6 +4,34 @@ Read-only Omarchy/Quickshell bar widget for CPU, RAM, NVIDIA GPU, grouped applic
 
 Plugin ID: `cynricantao.system-monitor`. Requires Omarchy's native `qs.Ui`/`qs.Commons` APIs and `/usr/bin/python3` (standard library only). NVIDIA metrics optionally use `/usr/bin/nvidia-smi`; missing or unsupported telemetry is shown as unavailable. No root privileges, separate service or Python packages are needed. GPU adapters for AMD/Intel and per-application GPU usage are not implemented.
 
+## Screenshots
+
+These are captures of the actual QML interface in an isolated preview session,
+using **synthetic demonstration telemetry**. Hardware labels, application names,
+resource percentages and storage values are examples—not the maintainer's
+computer. No personal desktop, real process list or private mount path is shown.
+
+<table>
+<tr>
+<td><img src="docs/images/overview.png" width="440" alt="System Monitor dashboard with example CPU RAM GPU histories and grouped applications"></td>
+<td><img src="docs/images/storage.png" width="440" alt="System Monitor Storage tab showing a synthetic system filesystem capacity bar"></td>
+</tr>
+<tr><td><strong>Processes:</strong> resource cards and grouped applications.</td><td><strong>Storage:</strong> filesystem usage while the resource cards remain visible.</td></tr>
+</table>
+
+## Quick walkthrough
+
+1. **Open the dashboard:** click any RAM, CPU or GPU bar icon/percentage.
+2. **Inspect applications:** Processes shows the top five grouped applications.
+   Use RAM/CPU to change sorting, RSS/PSS to compare memory accounting, and See
+   all to expand the list. Missing PSS remains unavailable rather than becoming RSS.
+3. **Explore other views:** Temps shows available sensors; Storage shows
+   filesystem capacity; Network shows per-interface traffic rates and histories.
+4. **Open Details:** inspect available RAM/swap, CPU cores, disk rates, load,
+   uptime and metric interpretation notes in the scrollable detail view.
+5. **Close with Escape or an outside click:** detailed process scans stop when
+   closed; the bar continues its lightweight resource sampling.
+
 ## Install, update and remove
 
 Review the code before enabling it: Omarchy plugins run unsandboxed as your user.
