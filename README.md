@@ -1,0 +1,81 @@
+# System Monitor
+
+Read-only Omarchy/Quickshell bar widget for CPU, RAM, NVIDIA GPU, grouped applications, temperatures, storage and network rates.
+
+Plugin ID: `cynricantao.system-monitor`. Requires Omarchy's native `qs.Ui`/`qs.Commons` APIs and `/usr/bin/python3` (standard library only). NVIDIA metrics optionally use `/usr/bin/nvidia-smi`; missing or unsupported telemetry is shown as unavailable. No root privileges, separate service or Python packages are needed. GPU adapters for AMD/Intel and per-application GPU usage are not implemented.
+
+## Install, update and remove
+
+Review the code before enabling it: Omarchy plugins run unsandboxed as your user.
+
+```sh
+omarchy plugin add https://github.com/cynricantao/omarchy-system-monitor.git --enable
+omarchy plugin update cynricantao.system-monitor
+omarchy plugin remove cynricantao.system-monitor
+```
+
+No install hook or separate service is required; the shell starts the read-only
+collector when the widget loads. Removing the plugin stops its widget/child collector;
+there is no plugin-created persistent monitoring history to erase.
+
+## Use
+
+Click a RAM/CPU/GPU bar icon or percentage to toggle the popup; Escape or an outside click closes it. The default Processes view shows five grouped applications; See all expands the list. RAM/CPU switches sorting; RSS/PSS switches the memory definition. Temperatures, Storage, Network and Details expose additional metrics. Popup width targets 440 scaled pixels; height is capped at the smaller of 460 scaled pixels and 44% of the active screen height. Scroll longer lists inside the popup.
+
+## Metrics and sampling
+
+- CPU: `/proc/stat` interval deltas excluding idle and iowait; normalized to whole-machine 0–100%. Guest time is not double-counted.
+- RAM: `(MemTotal - MemAvailable) / MemTotal`, treating reclaimable cache as available.
+- Application CPU: summed user/system tick deltas normalized by logical core count. Opening requires two samples; PID reuse is detected and exited processes are not retained.
+- RSS: summed resident pages from `/proc/PID/stat`. Shared pages count in each process, so group totals can exceed attributable physical memory. PSS: summed readable `smaps_rollup` proportional memory; a missing PSS for any nonzero-RSS process makes that group's PSS unavailable, never a mixture of RSS and PSS. Application totals need not equal system-used RAM.
+- Common browser/Steam helpers join their application group. Other executables group by basename; interpreter-based programs may share a Python/Node group. Kernel threads are grouped.
+- GPU: NVIDIA utilization, VRAM and sensor values, with unavailable values when unsupported.
+- Network: per-interface receive/transmit counter deltas; tunnels can overlap physical traffic. Disk rates use whole block devices, not partitions. Storage deduplicates same-source/same-capacity mounts.
+- One Python collector samples every two seconds **after collection**. Process and smaps scans occur only while the popup is open. CPU/RAM/GPU history keeps 60 samples; per-interface network history keeps 60 points updated only while open. Histories are in memory. Detail cost depends on process count and memory maps; no performance guarantees or published benchmark claims are made.
+- Bar metrics become stale after eight seconds without a successful sample. Collector restart attempts occur every ten seconds after failure. Animations are finite.
+
+## Local management and IPC
+
+Once installed through Omarchy's plugin workflow:
+
+```sh
+omarchy plugin enable cynricantao.system-monitor --section right
+omarchy plugin disable cynricantao.system-monitor
+omarchy-shell cynricantao.system-monitor status
+omarchy-shell cynricantao.system-monitor open
+omarchy-shell cynricantao.system-monitor close
+omarchy-shell cynricantao.system-monitor toggle
+omarchy-shell cynricantao.system-monitor view applications
+omarchy-shell cynricantao.system-monitor view processes
+omarchy-shell cynricantao.system-monitor view temperatures
+omarchy-shell cynricantao.system-monitor view storage
+omarchy-shell cynricantao.system-monitor view network
+omarchy-shell cynricantao.system-monitor view details
+omarchy-shell cynricantao.system-monitor sort cpu
+omarchy-shell cynricantao.system-monitor sort memory
+omarchy-shell cynricantao.system-monitor memory rss
+omarchy-shell cynricantao.system-monitor memory pss
+```
+
+`status` returns only popup/collector health and selected UI state, not telemetry. `view all` is an alias for applications; unknown views select processes, unknown sorts select memory, and unknown memory modes select RSS. Controls change presentation and whether detailed sampling runs, not monitored applications or system settings. These are **unsandboxed local shell IPC**, not authenticated remote APIs. See [SECURITY.md](SECURITY.md).
+
+## Privacy
+
+No analytics, telemetry uploads, HTTP requests, credentials, command-line arguments, environment variables or process-memory contents are collected. The collector reads system counters, hardware sensor labels, GPU model/metrics, executable **basenames**, process IDs/parent IDs/timing/resident memory and PSS totals. It resolves executable symlinks internally but does not emit their full paths. Opening the popup additionally reads mount paths/capacity, load and uptime. Process/mount/interface names can reveal private activity even without command lines.
+
+Snapshots travel over a local child-process stdout pipe into the shell; transient process metadata and histories remain in memory, not plugin-created files. Closing clears detailed snapshots/process baselines; metric and network histories remain until the shell exits. Existing OS/shell logs or crash dumps may retain data independently. Screenshots and copied output can disclose activity: review/redact them before sharing. The plugin shares the shell user's permissions and is not a security boundary.
+
+## Verification
+
+Run from the repository root:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -v
+omarchy plugin validate "$PWD"
+```
+
+Tests cover accounting and collector/IPC/source security contracts. Some source checks are structural and GPU tests use mocked subprocess responses; neither proves live QML rendering. Plugin validation checks manifest compatibility, not runtime or visual acceptance. Validate live behavior separately before release; this public candidate has not been installed or used to restart the shell during preparation.
+
+## License and compatibility
+
+MIT; see [LICENSE](LICENSE). `MonitorPopup.qml` derives from Omarchy's native `shell/Ui/KeyboardPanel.qml`, copyright David Heinemeier Hansson. Its retained MIT notice is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The compatibility copy adds `qs.Ui`, a fixed dark background and square corners; review it after shell API updates. System Monitor does not provide process killing or btop's full inspection features.

@@ -1,0 +1,22 @@
+# Python/test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+# Local environments and editor state
+.venv/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.DS_Store
+# Private evidence, screenshots, snapshots and backups (never publish)
+.private/
+screenshots/
+evidence/
+telemetry/
+*.log
+*.backup-*
+*.bak
